@@ -4,54 +4,69 @@
 bit x = 0;      
 bit y = 0;      
 byte turn = A_TURN;
-byte mutex = 0;  
+
+#define IDLE 0
+#define WAITING 1
+#define CRITICAL 2
+
+byte a_state = IDLE;
+byte b_state = IDLE;
 
 active proctype A() {
     do
-    ::  atomic {
-            x = 1;                 
-            turn = B_TURN;        
-        }
-        do
-        :: (y == 0 || turn == A_TURN) -> break
-        od;
+    ::
+        a_state = IDLE;
+
+        // assume some non-critical work
+
+        a_state = WAITING;
+        x = 1;
+        turn = B_TURN;
+
+        (y == 0 || turn == A_TURN); // busy wait on MUTEX
+
+        // Critical section!
+        a_state = CRITICAL;
+
+        skip; // do some work
 
         atomic {
-            mutex++;              
-            assert(mutex == 1);  
-            printf("A entra nella sezione critica\n");
-
-            printf("A lavora nella sezione critica\n");
-
-            printf("A esce dalla sezione critica\n");
-            mutex--;
-            x = 0;           
+            x = 0;
+            a_state = IDLE;
         }
+
     od
 }
 
 active proctype B() {
     do
-    ::  atomic {
-            y = 1;
-            turn = A_TURN;
-        }
+    ::  // symmetric w.r.t proc A
+        b_state = IDLE;
 
-        do
-        :: (x == 0 || turn == B_TURN) -> break
-        od;
+        b_state = WAITING;
+
+        y = 1;
+        turn = A_TURN;
+
+        (x == 0 || turn == B_TURN);
+
+        // Critical section!
+        b_state = CRITICAL;
+
+        skip; //  do some work
 
         atomic {
-            mutex++;
-            assert(mutex == 1);
-            printf("B entra nella sezione critica\n");
-
-    
-            printf("B lavora nella sezione critica\n");
-
-            printf("B esce dalla sezione critica\n");
-            mutex--;
             y = 0;
+            b_state = IDLE;
         }
     od
 }
+
+// LTL properties for verification
+
+// 1. MUTEX properties expressed on process states
+ltl mutex { []!(a_state == CRITICAL && b_state == CRITICAL)}
+
+// 2. Liveness/Progress properties
+ltl progress_A { [] (a_state == WAITING -> (<> (a_state == CRITICAL))) }
+ltl progress_B { [] (b_state == WAITING -> (<> (b_state == CRITICAL))) }
