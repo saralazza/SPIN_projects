@@ -5,9 +5,9 @@ mtype = {REQ, REL, ACC, DEN}
 chan toStick[N] = [0] of {mtype, byte}
 chan toPhil[N] = [0] of {mtype}
 
-//Deadlock prone version of dining philosophers
 
 inline pick_stick(j, i) {
+    assert(i >= 0 && i < N && j >=0 && j < N);
     mtype msg_type;
     do
     :: toStick[j] ! REQ, i;
@@ -15,18 +15,21 @@ inline pick_stick(j, i) {
        if
        :: msg_type == ACC ->
             printf("Philosopher %d takes stick %d\n", i, j);
-            break
-       :: msg_type == DEN ->
-            skip // retry
+            break;
+       :: msg_type == DEN -> skip; // retry
        fi
     od
 }
 
 inline release_stick(j, i) {
-     atomic {
+    assert(i >= 0 && i < N && j >=0 && j < N);
+    atomic {
         toStick[j] ! REL, i;
         printf("Philosopher %d releases stick %d\n", i, j); }
 }
+
+// Deadlock-free version of Dining Philosophers: 
+// odd philosophers pick up the right stick first, then left
 
 proctype Philosopher(byte i) {
     byte left  = i;
@@ -36,8 +39,14 @@ proctype Philosopher(byte i) {
     :: printf("Philosopher %d is thinking...\n", i);
        skip; // simulate thinking time
 
-       pick_stick(left, i);
-       pick_stick(right, i);
+       if
+       :: i % 2 == 0 ->  // even philosophers: pick left, then right
+            pick_stick(left, i);
+            pick_stick(right, i);
+       :: else ->        // odd philosophers: pick right, then left
+            pick_stick(right, i);
+            pick_stick(left, i);
+       fi;
 
        printf("Philosopher %d is eating...\n", i);
        skip; // simulate eating time
@@ -90,7 +99,6 @@ init {
         :: else -> break
         od;
     }
-
 }
 
     
