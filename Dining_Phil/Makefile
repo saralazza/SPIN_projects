@@ -13,7 +13,7 @@ verify: build
 	./${PAN} -a -m20000
 
 clean:
-	rm -f ${PAN} pan.[chmt] pan.b pan.p pan.*.trail pan.dot pan.html pan.log pan.inp pan.out pan.core trail core* *.trail
+	rm -f ${PAN} pan.[chmt] pan.b pan.p pan.*.trail pan.dot pan.html pan.log pan.inp pan.out pan.core trail core* *.trail _spin_nvr.tmp
 
 check: clean verify
 

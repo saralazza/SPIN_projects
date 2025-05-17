@@ -1,75 +1,73 @@
-#define N 5 //number of philosophers
+mtype = { 
+            // philosophers states
+            THINKING, HUNGRY, EATING, 
 
-mtype = {REQ, REL, ACC, DEN}
+            // chopstick states
+            AVAILABLE, OCCUPIED,
 
-chan toStick[N] = [0] of {mtype, byte}
-chan toPhil[N] = [0] of {mtype}
+            // message types for philosopher-chopstick communication
+            REQ, REL, ACC
+        }      
 
-//Deadlock prone version of dining philosophers
+mtype phil_states[5];
+mtype stick_states[5];
+chan toStick[5] = [0] of {mtype, byte}
+chan toPhil[5] = [0] of {mtype}
 
 inline pick_stick(j, i) {
-    mtype msg_type;
-    do
-    :: toStick[j] ! REQ, i;
-       toPhil[i] ? msg_type;
-       if
-       :: msg_type == ACC ->
-            printf("Philosopher %d takes stick %d\n", i, j);
-            break
-       :: msg_type == DEN ->
-            skip // retry
-       fi
-    od
+
+    toStick[j] ! REQ, i;
+    toPhil[i] ? ACC;
+    printf("Philosopher %d takes stick %d\n", i, j);
 }
 
 inline release_stick(j, i) {
      atomic {
         toStick[j] ! REL, i;
         printf("Philosopher %d releases stick %d\n", i, j); }
+
+    phil_states[i] = THINKING;
 }
 
+//Deadlock prone version of dining philosophers
+
 proctype Philosopher(byte i) {
+
     byte left  = i;
-    byte right = (i + 1) % N;
+    byte right = (i + 1) % 5;
+
+    phil_states[i] = THINKING;
 
     do
     :: printf("Philosopher %d is thinking...\n", i);
-       skip; // simulate thinking time
-
+       
+       phil_states[i] = HUNGRY;
        pick_stick(left, i);
        pick_stick(right, i);
-
-       printf("Philosopher %d is eating...\n", i);
-       skip; // simulate eating time
+       
+       progress: printf("Philosopher %d is eating...\n", i);
+       phil_states[i] = EATING;
 
        release_stick(left, i);
        release_stick(right, i);
     od
 }
 
-
 proctype Stick(byte j) {
 
-    //Initial state: available
-    bool free = true;
-    mtype msg_type;
+    stick_states[j] = AVAILABLE;
     byte phil;
 
     do
-    :: toStick[j] ? msg_type, phil ->
-        if
-        :: msg_type == REQ ->
-            if
-            :: free ->
-                free = false;
-                toPhil[phil] ! ACC;
-            :: else ->
-                toPhil[phil] ! DEN;
-            fi
-        :: msg_type == REL ->
-            free = true;
-        fi
-    od }
+    :: stick_states[j] == AVAILABLE -> toStick[j] ? REQ, phil;
+                                       stick_states[j] = OCCUPIED;
+                                       toPhil[phil] ! ACC;
+
+    :: stick_states[j] == OCCUPIED -> toStick[j] ? REL, _;
+                                      stick_states[j] = AVAILABLE;
+
+    od 
+}
 
 
 init {
@@ -79,18 +77,34 @@ init {
         // Start all stick processes
         i = 0;
         do
-        :: i < N -> run Stick(i); i++
+        :: i < 5 -> run Stick(i); i++
         :: else -> break
         od;
 
         // Start all philosopher processes
         i = 0;
         do
-        :: i < N -> run Philosopher(i); i++
+        :: i < 5 -> run Philosopher(i); i++
         :: else -> break
         od;
     }
 
 }
 
+
+// System requirements
+
+// No deadlock
+ltl no_deadlock { [] ! ( (phil_states[0] == HUNGRY && phil_states[1] == HUNGRY 
+                    && phil_states[2] == HUNGRY  && phil_states[3] == HUNGRY 
+                    && phil_states[4] == HUNGRY) && (stick_states[0] == OCCUPIED 
+                    && stick_states[1] == OCCUPIED && stick_states[2] == OCCUPIED 
+                    && stick_states[3] == OCCUPIED && stick_states[4] == OCCUPIED)) }
+
+// Starvation freedom
+ltl alive_0 { [] <> (phil_states[0] == EATING) }
+ltl alive_1 { [] <> (phil_states[1] == EATING) }
+ltl alive_2 { [] <> (phil_states[2] == EATING) }
+ltl alive_3 { [] <> (phil_states[3] == EATING) }
+ltl alive_4 { [] <> (phil_states[4] == EATING) }
     
