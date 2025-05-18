@@ -14,7 +14,35 @@ mtype stick_states[5];
 chan toStick[5] = [0] of {mtype, byte}
 chan toPhil[5] = [0] of {mtype}
 
+inline pick_both_sticks(i) {
+    byte left = i;
+    byte right = (i + 1) % 5;
+    mtype msg_type_left;
+    mtype msg_type_right;
+
+    do
+    :: toStick[left] ! REQ, i;
+       toPhil[i] ? msg_type_left;
+
+       toStick[right] ! REQ, i;
+       toPhil[i] ? msg_type_right;
+
+       if
+       :: (msg_type_left == ACC && msg_type_right == ACC) ->
+            printf("Philosopher %d takes sticks %d and %d\n", i, left, right);
+            break;
+       :: else ->
+            if
+            :: msg_type_left == ACC -> toStick[left] ! REL, i;
+            :: msg_type_right == ACC -> toStick[right] ! REL, i;
+            fi;
+       fi
+    od
+}
 inline pick_stick(j, i) {
+
+    // only a neighbor philosoper can pick the stick
+    assert(i == j || (j > 0 && i == j - 1) || (j == 0 && i == 4));
 
     mtype msg_type;
     
@@ -30,10 +58,15 @@ inline pick_stick(j, i) {
     od
 }
 
-inline release_stick(j, i) {
+inline release_both_sticks(i) {
+    
+    byte left = i;
+    byte right = (i + 1) % 5;
+
      atomic {
-        toStick[j] ! REL, i;
-        printf("Philosopher %d releases stick %d\n", i, j); }
+        toStick[left] ! REL, i;
+        toStick[right] ! REL, i;
+        printf("Philosopher %d releases sticks %d and %d\n", i, left, right); }
 
     phil_states[i] = THINKING;
 }
@@ -42,30 +75,29 @@ inline release_stick(j, i) {
 
 proctype Philosopher(byte i) {
 
-    byte left  = i;
-    byte right = (i + 1) % 5;
-
     phil_states[i] = THINKING;
 
     do
     :: printf("Philosopher %d is thinking...\n", i);
        
        phil_states[i] = HUNGRY;
-       pick_stick(left, i);
-       pick_stick(right, i);
-       
+    
+       pick_both_sticks(i);
        progress: printf("Philosopher %d is eating...\n", i);
        phil_states[i] = EATING;
 
-       release_stick(left, i);
-       release_stick(right, i);
+       release_both_sticks(i);
     od
 }
 
 proctype Stick(byte j) {
 
-    byte left = j;
-    byte right = (j+1) % 5;
+    byte left;
+    if
+        :: j > 0 -> left = j-1;
+        :: j == 0 -> left = 4;
+    fi
+    byte right = j;
     byte phil;
     
     // odd sticks are first available to philosophers on the right
