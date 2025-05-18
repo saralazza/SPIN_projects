@@ -58,18 +58,18 @@ inline release_both_sticks(i) {
 
 proctype Philosopher(byte i) {
 
-    phil_states[i] = THINKING;
-
     do
-    :: printf("Philosopher %d is thinking...\n", i);
+    :: 
+        phil_states[i] = THINKING;
+        printf("Philosopher %d is thinking...\n", i);
        
-       phil_states[i] = HUNGRY;
-    
-       pick_both_sticks(i);
-       progress: printf("Philosopher %d is eating...\n", i);
-       phil_states[i] = EATING;
+        phil_states[i] = HUNGRY;
+        pick_both_sticks(i);
 
-       release_both_sticks(i);
+        progress: phil_states[i] = EATING;
+        printf("Philosopher %d is eating...\n", i);
+
+        release_both_sticks(i);
     od
 }
 

@@ -41,20 +41,20 @@ proctype Philosopher(byte i) {
     byte left  = i;
     byte right = (i + 1) % 5;
 
-    phil_states[i] = THINKING;
-
     do
-    :: printf("Philosopher %d is thinking...\n", i);
-       
-       phil_states[i] = HUNGRY;
-       pick_stick(left, i);
-       pick_stick(right, i);
-       
-       progress: printf("Philosopher %d is eating...\n", i);
-       phil_states[i] = EATING;
+    ::
+        phil_states[i] = THINKING;
+        printf("Philosopher %d is thinking...\n", i);
+        
+        phil_states[i] = HUNGRY;
+        pick_stick(left, i);
+        pick_stick(right, i);
+        
+        progress: phil_states[i] = EATING;
+        printf("Philosopher %d is eating...\n", i);
 
-       release_stick(left, i);
-       release_stick(right, i);
+        release_stick(left, i);
+        release_stick(right, i);
     od
 }
 
