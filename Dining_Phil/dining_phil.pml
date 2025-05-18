@@ -20,6 +20,7 @@ inline pick_both_sticks(i) {
     mtype msg_type_left;
     mtype msg_type_right;
 
+    // try to get both sticks or release one
     do
     :: toStick[left] ! REQ, i;
        toPhil[i] ? msg_type_left;
@@ -39,34 +40,16 @@ inline pick_both_sticks(i) {
        fi
     od
 }
-inline pick_stick(j, i) {
 
-    // only a neighbor philosoper can pick the stick
-    assert(i == j || (j > 0 && i == j - 1) || (j == 0 && i == 4));
-
-    mtype msg_type;
-    
-    do
-    :: toStick[j] ! REQ, i;
-       toPhil[i] ? msg_type;
-       if
-       :: msg_type == ACC ->
-            printf("Philosopher %d takes stick %d\n", i, j);
-            break;
-       :: msg_type == DEN -> skip; // retry
-       fi
-    od
-}
 
 inline release_both_sticks(i) {
     
     byte left = i;
     byte right = (i + 1) % 5;
 
-     atomic {
-        toStick[left] ! REL, i;
-        toStick[right] ! REL, i;
-        printf("Philosopher %d releases sticks %d and %d\n", i, left, right); }
+    toStick[left] ! REL, i;
+    toStick[right] ! REL, i;
+    printf("Philosopher %d releases sticks %d and %d\n", i, left, right); 
 
     phil_states[i] = THINKING;
 }

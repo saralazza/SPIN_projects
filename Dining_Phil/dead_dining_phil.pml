@@ -16,7 +16,7 @@ chan toPhil[5] = [0] of {mtype}
 
 inline pick_stick(j, i) {
 
-    // only a neighbor philosoper can pick the stick
+    // only a neighbor philosopher can pick the stick
     assert(i == j || (j > 0 && i == j - 1) || (j == 0 && i == 4));
 
     toStick[j] ! REQ, i;
@@ -28,9 +28,8 @@ inline release_stick(j, i) {
 
     assert(i == j || (j > 0 && i == j - 1) || (j == 0 && i == 4));
     
-    atomic {
-        toStick[j] ! REL, i;
-        printf("Philosopher %d releases stick %d\n", i, j); }
+    toStick[j] ! REL, i;
+    printf("Philosopher %d releases stick %d\n", i, j);
 
     phil_states[i] = THINKING;
 }
