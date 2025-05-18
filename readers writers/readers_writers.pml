@@ -33,7 +33,7 @@ proctype Reader(byte id) {
        (mypos == head && writing == false) ->
          counter = counter + 1;
          printf("Reader %d (pos %d, q_id[head]=%d) enters. Readers active: %d.\n", id, mypos, q_id[head], counter);
-         head = (head + 1) % QSIZE; // Advance head, "dequeuing" this reader
+         head = (head + 1) % QSIZE;
      }
 
      // --- CS: Reading ---
@@ -73,7 +73,7 @@ proctype Writer(byte id) {
 
      // leave Critical Section
      atomic {
-       writing = false; // Clear writing flag
+       writing = false;
        printf("Writer %d leaves.\n", id);
      }
   od
