@@ -7,7 +7,7 @@
 //       c2 6  7  -  8
 //       c3 2  3  8  -
 
-#define MIN 18
+#define MIN 90
 #define prop (cost >= MIN)
 
 local bit vv[4];     // visited cities
