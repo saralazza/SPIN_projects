@@ -1,0 +1,42 @@
+never mutual_exclusion {    /* !([] (! (((counter>0)) && (writing)))) */
+T0_init:
+	do
+	:: atomic { (! ((! (((counter>0)) && (writing))))) -> assert(!(! ((! (((counter>0)) && (writing)))))) }
+	:: (1) -> goto T0_init
+	od;
+accept_all:
+	skip
+}
+never liveness_readers {    /* !([] (<> ((counter>0)))) */
+T0_init:
+	do
+	:: (! (((counter>0)))) -> goto accept_S4
+	:: (1) -> goto T0_init
+	od;
+accept_S4:
+	do
+	:: (! (((counter>0)))) -> goto accept_S4
+	od;
+}
+never liveness_writers {    /* !([] (<> (writing))) */
+T0_init:
+	do
+	:: (! ((writing))) -> goto accept_S4
+	:: (1) -> goto T0_init
+	od;
+accept_S4:
+	do
+	:: (! ((writing))) -> goto accept_S4
+	od;
+}
+never liveness_queue {    /* !([] (<> ((head!=tail)))) */
+T0_init:
+	do
+	:: (! (((head!=tail)))) -> goto accept_S4
+	:: (1) -> goto T0_init
+	od;
+accept_S4:
+	do
+	:: (! (((head!=tail)))) -> goto accept_S4
+	od;
+}
